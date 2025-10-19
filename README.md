@@ -1,5 +1,8 @@
 # Air Quality Prediction – R Project
 
+Predicts air-quality/PM levels from environmental features (e.g., temperature, humidity, wind, pollutants).  
+End-to-end: data prep ➜ modeling ➜ evaluation ➜ report.
+
 ### Overview
 This project predicts air quality levels based on environmental parameters such as temperature, humidity, and pollutant concentration.  
 It includes data preprocessing, model training, and performance evaluation using R.
