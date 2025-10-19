@@ -1,0 +1,879 @@
+```{r}
+library(reticulate)
+
+# Now this should work since Git is in PATH
+reticulate::install_python()
+
+```
+
+```{r}
+library(reticulate)
+
+# Confirm that reticulate is using the correct Python
+use_python("C:/Users/nvpra/AppData/Local/r-reticulate/r-reticulate/pyenv/pyenv-win/versions/3.10.11/python.exe", required = TRUE)
+
+# Install Selenium into this Python environment
+py_install("selenium", pip = TRUE)
+
+```
+
+```{r}
+py_config()
+
+
+```
+
+```{r}
+reticulate::py_install("selenium", pip = TRUE)
+
+
+```
+
+```{r}
+reticulate::py_install("numpy", pip = TRUE)
+
+```
+
+```{r}
+py_run_string("
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+import time
+
+driver_path = 'C:/webdrivers/chromedriver135/chromedriver.exe'  # Update if needed
+
+service = Service(driver_path)
+options = webdriver.ChromeOptions()
+options.add_argument('--start-maximized')
+
+driver = webdriver.Chrome(service=service, options=options)
+driver.get('https://www.google.com')
+
+time.sleep(5)
+driver.quit()
+")
+
+```
+
+```{r}
+library(reticulate)
+
+# Point to the exact Python where selenium is installed
+use_python("C:/Users/nvpra/OneDrive/Documents/.virtualenvs/r-reticulate/Scripts/python.exe", required = TRUE)
+
+# Confirm the Python environment in use
+py_config()
+
+
+```
+
+```{r}
+py_run_string("
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+import time
+
+# ✅ Make sure this path is correct
+driver_path = 'C:/drivers/chromedriver-win64/chromedriver.exe'
+
+# Set up Chrome driver using explicit path
+service = Service(executable_path=driver_path)
+options = webdriver.ChromeOptions()
+options.add_argument('--start-maximized')
+
+# Create driver
+driver = webdriver.Chrome(service=service, options=options)
+
+# Go to Google
+driver.get('https://www.google.com')
+time.sleep(5)
+#driver.quit()
+")
+
+```
+
+```{r}
+py_run_string("
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+import time
+
+driver_path = 'C:/drivers/chromedriver-win64/chromedriver.exe'
+
+# Set up Chrome
+service = Service(driver_path)
+options = webdriver.ChromeOptions()
+options.add_argument('--start-maximized')
+
+driver = webdriver.Chrome(service=service, options=options)
+driver.get('https://www.marketwatch.com/investing/stock/aapl')
+
+# Wait for the page to load
+time.sleep(5)
+
+# Extract info
+company = driver.find_element(By.CLASS_NAME, 'company__name').text
+price = driver.find_element(By.CLASS_NAME, 'intraday__price').text
+change = driver.find_element(By.CLASS_NAME, 'intraday__change').text
+
+driver.quit()
+
+# Return to R
+stock_data = {'Company': company, 'Price': price, 'Change': change}
+")
+
+# Access it in R
+stock_info <- py$stock_data
+print(stock_info)
+
+```
+
+```{r}
+library(reticulate)
+
+py_run_string("
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+import time
+import pandas as pd
+
+driver_path = 'C:/drivers/chromedriver-win64/chromedriver.exe'
+service = Service(driver_path)
+options = webdriver.ChromeOptions()
+options.add_argument('--headless')  # run in background
+options.add_argument('--disable-gpu')
+
+driver = webdriver.Chrome(service=service, options=options)
+driver.get('https://www.marketwatch.com/investing/stock/aapl')
+time.sleep(5)
+
+# Extract fields
+company = driver.find_element(By.CLASS_NAME, 'company__name').text
+price = driver.find_element(By.CLASS_NAME, 'intraday__price').text
+change = driver.find_element(By.CLASS_NAME, 'intraday__change').text
+
+# Primary stock table
+table = driver.find_element(By.CLASS_NAME, 'table--primary')
+rows = table.find_elements(By.TAG_NAME, 'tr')
+
+open_price = rows[0].find_elements(By.TAG_NAME, 'td')[1].text
+day_range = rows[1].find_elements(By.TAG_NAME, 'td')[1].text
+week_52 = rows[2].find_elements(By.TAG_NAME, 'td')[1].text
+volume = rows[3].find_elements(By.TAG_NAME, 'td')[1].text
+
+driver.quit()
+
+# Store data in DataFrame
+data = {
+    'Company': company,
+    'Price': price,
+    'Change': change,
+    'Open': open_price,
+    'Day Range': day_range,
+    '52 Week Range': week_52,
+    'Volume': volume
+}
+df = pd.DataFrame([data])
+
+# Save to CSV
+csv_path = 'C:/Users/nvpra/OneDrive/Desktop/stock_data.csv'
+df.to_csv(csv_path, index=False)
+")
+
+# Confirm from R that the file was created
+cat("CSV created at: C:/Users/nvpra/OneDrive/Desktop/stock_data.csv\n")
+
+
+```
+
+```{r}
+py_run_string("
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+import pandas as pd
+
+driver_path = 'C:/drivers/chromedriver-win64/chromedriver.exe'
+service = Service(driver_path)
+options = webdriver.ChromeOptions()
+options.add_argument('--start-maximized')
+options.add_argument('--disable-blink-features=AutomationControlled')
+options.add_experimental_option('excludeSwitches', ['enable-automation'])
+options.add_experimental_option('useAutomationExtension', False)
+
+
+driver = webdriver.Chrome(service=service, options=options)
+driver.get('https://www.marketwatch.com/investing/stock/aapl')
+
+driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+    'source': '''
+        Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined
+        })
+    '''
+})
+
+
+wait = WebDriverWait(driver, 10)  # wait up to 10 seconds
+
+# ✅ Wait for specific elements
+company = wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'company__name'))).text
+price = wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'intraday__price'))).text
+change = wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'intraday__change'))).text
+
+# ✅ Wait and get stock table rows
+table = wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'table--primary')))
+rows = table.find_elements(By.TAG_NAME, 'tr')
+
+open_price = rows[0].find_elements(By.TAG_NAME, 'td')[1].text
+day_range = rows[1].find_elements(By.TAG_NAME, 'td')[1].text
+week_52 = rows[2].find_elements(By.TAG_NAME, 'td')[1].text
+volume = rows[3].find_elements(By.TAG_NAME, 'td')[1].text
+
+driver.quit()
+
+# ✅ Save to CSV
+data = {
+    'Company': company,
+    'Price': price,
+    'Change': change,
+    'Open': open_price,
+    'Day Range': day_range,
+    '52 Week Range': week_52,
+    'Volume': volume
+}
+df = pd.DataFrame([data])
+df.to_csv('C:/Users/nvpra/OneDrive/Desktop/stock_data.csv', index=False)
+")
+
+```
+
+```{r}
+install.packages("reticulate")
+
+```
+
+```{r}
+reticulate::py_install("selenium", pip = TRUE)
+
+```
+
+```{r}
+reticulate::install_python()
+
+```
+
+```{r}
+library(reticulate)
+
+# Now this should work
+reticulate::install_python()
+
+```
+
+```{r}
+py_install("pandas", pip = TRUE)
+```
+
+```{r}
+library(reticulate)
+py_install("keras", pip = TRUE)
+
+```
+
+```{r}
+py_run_string("
+import yfinance as yf
+import pandas as pd
+
+# Fetch data for Apple (AAPL)
+ticker = yf.Ticker('AAPL')
+
+# Get historical data (last 60 days)
+hist = ticker.history(period='60d')
+
+# Reset index and save
+hist.reset_index(inplace=True)
+hist.to_csv('C:/Users/nvpra/OneDrive/Desktop/aapl_data.csv', index=False)
+")
+
+```
+
+```{r}
+py_run_string("
+import yfinance as yf
+import pandas as pd
+
+# Fetch data for Apple (AAPL)
+ticker = yf.Ticker('AAPL')
+
+# Get historical data (last 60 days)
+hist = ticker.history(period='6000d')
+
+# Reset index and save
+hist.reset_index(inplace=True)
+hist.to_csv('C:/Users/nvpra/OneDrive/Desktop/aapl_data.csv', index=False)
+")
+
+```
+
+```{r}
+library(readr)
+library(dplyr)
+
+data <- read_csv("C:/Users/nvpra/OneDrive/Desktop/aapl_data.csv")
+glimpse(data)
+
+```
+
+```{r}
+library(dplyr)
+library(lubridate)
+
+clean_data <- data %>%
+  mutate(
+    Date = as.Date(Date),
+    Dividends = as.numeric(Dividends),
+    `Stock Splits` = as.numeric(`Stock Splits`)
+  ) %>%
+  select(Date, Open, High, Low, Close, Volume) %>%  # Drop Dividends & Splits for now
+  arrange(Date)
+
+```
+
+```{r}
+library(dplyr)
+library(zoo)
+
+reg_data <- clean_data %>%
+  arrange(Date) %>%
+  mutate(
+    lag1 = lag(Close, 1),
+    lag2 = lag(Close, 2),
+    ma5 = rollmean(Close, k = 5, fill = NA, align = "right"),
+    ma10 = rollmean(Close, k = 10, fill = NA, align = "right"),
+    volatility10 = rollapply(Close, width = 10, FUN = sd, fill = NA, align = "right"),
+    next_close = lead(Close, 1)  # 🎯 target: next day close
+  ) %>%
+  na.omit()
+
+```
+
+```{r}
+set.seed(123)
+
+n <- nrow(reg_data)
+train_index <- 1:round(0.8 * n)
+train <- reg_data[train_index, ]
+test <- reg_data[-train_index, ]
+
+```
+
+```{r}
+model <- lm(next_close ~ lag1 + lag2 + ma5 + ma10 + volatility10, data = train)
+summary(model)
+
+```
+
+```{r}
+preds <- predict(model, newdata = test)
+
+# Evaluate performance
+actuals <- test$next_close
+rmse <- sqrt(mean((preds - actuals)^2))
+mae <- mean(abs(preds - actuals))
+
+cat("RMSE:", rmse, "\n")
+cat("MAE:", mae, "\n")
+
+```
+
+```{r}
+library(ggplot2)
+
+plot_df <- data.frame(Date = test$Date, Actual = actuals, Predicted = preds)
+
+ggplot(plot_df, aes(x = Date)) +
+  geom_line(aes(y = Actual), color = "blue") +
+  geom_line(aes(y = Predicted), color = "red", linetype = "dashed") +
+  labs(title = "Next-Day Close Price Prediction",
+       y = "Price", x = "Date") +
+  theme_minimal()
+
+```
+
+```{r}
+if (!require(xgboost)) install.packages("xgboost")
+library(xgboost)
+
+```
+
+```{r}
+# Select only numeric predictors
+xgb_features <- reg_data %>%
+  select(lag1, lag2, ma5, ma10, volatility10)
+
+target <- reg_data$next_close
+
+# Split into train and test
+n <- nrow(reg_data)
+train_index <- 1:round(0.8 * n)
+x_train <- as.matrix(xgb_features[train_index, ])
+x_test  <- as.matrix(xgb_features[-train_index, ])
+y_train <- target[train_index]
+y_test  <- target[-train_index]
+
+```
+
+```{r}
+xgb_model <- xgboost(
+  data = x_train,
+  label = y_train,
+  nrounds = 100,
+  objective = "reg:squarederror",
+  eval_metric = "rmse",
+  verbose = 0
+)
+
+```
+
+```{r}
+preds <- predict(xgb_model, x_test)
+
+# Evaluation
+rmse <- sqrt(mean((preds - y_test)^2))
+mae <- mean(abs(preds - y_test))
+
+cat("XGBoost RMSE:", rmse, "\n")
+cat("XGBoost MAE:", mae, "\n")
+
+```
+
+```{r}
+library(ggplot2)
+
+plot_df <- data.frame(
+  Date = reg_data$Date[-train_index],
+  Actual = y_test,
+  Predicted = preds
+)
+
+ggplot(plot_df, aes(x = Date)) +
+  geom_line(aes(y = Actual), color = "blue") +
+  geom_line(aes(y = Predicted), color = "red", linetype = "dashed") +
+  labs(title = "XGBoost: Next-Day Close Price Prediction",
+       y = "Price", x = "Date") +
+  theme_minimal()
+
+```
+
+```{r}
+# Normalize your features
+scaled_data <- reg_data %>%
+  mutate(across(c(lag1, lag2, ma5, ma10, volatility10), scale))
+
+xgb_features <- scaled_data %>% select(lag1, lag2, ma5, ma10, volatility10)
+target <- scaled_data$next_close
+
+```
+
+```{r}
+xgb_model <- xgboost(
+  data = as.matrix(x_train),
+  label = y_train,
+  nrounds = 200,
+  eta = 0.05,
+  max_depth = 5,
+  subsample = 0.7,
+  colsample_bytree = 0.8,
+  objective = "reg:squarederror",
+  eval_metric = "rmse",
+  verbose = 0
+)
+
+```
+
+```{r}
+reg_data <- reg_data %>%
+  mutate(
+    next_return = (lead(Close, 1) - Close) / Close  # Target: % change
+  ) %>%
+  na.omit()
+
+```
+
+```{r}
+library(dplyr)
+library(zoo)
+library(xgboost)
+library(ggplot2)
+library(scales)
+
+# Step 1: Feature engineering
+reg_data <- clean_data %>%
+  arrange(Date) %>%
+  mutate(
+    lag1 = lag(Close, 1),
+    lag2 = lag(Close, 2),
+    ma5 = rollmean(Close, k = 5, fill = NA, align = "right"),
+    ma10 = rollmean(Close, k = 10, fill = NA, align = "right"),
+    volatility10 = rollapply(Close, 10, sd, fill = NA, align = "right"),
+    next_return = (lead(Close, 1) - Close) / Close  # 🎯 Target
+  ) %>%
+  select(Date, lag1, lag2, ma5, ma10, volatility10, next_return) %>%
+  na.omit()
+
+# Step 2: Scale features
+features <- reg_data %>% select(lag1, lag2, ma5, ma10, volatility10)
+features_scaled <- scale(features)
+target <- reg_data$next_return
+
+# Step 3: Train-test split
+n <- nrow(reg_data)
+train_index <- 1:round(0.8 * n)
+x_train <- as.matrix(features_scaled[train_index, ])
+x_test  <- as.matrix(features_scaled[-train_index, ])
+y_train <- target[train_index]
+y_test  <- target[-train_index]
+dates   <- reg_data$Date[-train_index]
+
+# Step 4: Train XGBoost with tuned parameters
+xgb_model <- xgboost(
+  data = x_train,
+  label = y_train,
+  nrounds = 300,
+  eta = 0.05,
+  max_depth = 4,
+  subsample = 0.7,
+  colsample_bytree = 0.9,
+  objective = "reg:squarederror",
+  eval_metric = "rmse",
+  verbose = 0
+)
+
+# Step 5: Predict and evaluate
+preds <- predict(xgb_model, x_test)
+
+rmse <- sqrt(mean((preds - y_test)^2))
+mae <- mean(abs(preds - y_test))
+
+cat("📉 XGBoost Return Prediction RMSE:", round(rmse * 100, 4), "%\n")
+cat("📉 XGBoost Return Prediction MAE:", round(mae * 100, 4), "%\n")
+
+```
+
+```{r}
+library(ggplot2)
+
+# Prepare data for plotting (in percentage format)
+plot_df <- data.frame(
+  Date = dates,
+  Actual = y_test * 100,     # Convert to %
+  Predicted = preds * 100    # Convert to %
+)
+
+# Plot
+ggplot(plot_df, aes(x = Date)) +
+  geom_line(aes(y = Actual), color = "blue", linewidth = 1) +
+  geom_line(aes(y = Predicted), color = "red", linetype = "dashed", linewidth = 1) +
+  labs(title = "XGBoost Predicted vs Actual Next-Day Return (%)",
+       x = "Date",
+       y = "Return (%)") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    axis.text = element_text(size = 10),
+    axis.title = element_text(face = "bold")
+  )
+
+```
+
+```{r}
+# Sum of squared errors
+sse <- sum((preds - y_test)^2)
+
+# Total sum of squares
+sst <- sum((y_test - mean(y_test))^2)
+
+# R-squared
+r_squared <- 1 - sse / sst
+cat("R-squared (R²):", round(r_squared, 4), "\n")
+
+```
+
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
+
+```{r}
+library(dplyr)
+library(zoo)
+
+clf_data <- clean_data %>%
+  arrange(Date) %>%
+  mutate(
+    lag1 = lag(Close, 1),
+    lag2 = lag(Close, 2),
+    ma5 = rollmean(Close, 5, fill = NA, align = "right"),
+    ma10 = rollmean(Close, 10, fill = NA, align = "right"),
+    volatility10 = rollapply(Close, 10, sd, fill = NA, align = "right"),
+    next_return = (lead(Close, 1) - Close) / Close,
+    direction = ifelse(lead(Close, 1) > Close, 1, 0)  # 🎯 target
+  ) %>%
+  select(Date, lag1, lag2, ma5, ma10, volatility10, direction) %>%
+  na.omit()
+
+```
+
+```{r}
+features <- clf_data %>% select(lag1, lag2, ma5, ma10, volatility10)
+features_scaled <- scale(features)
+target <- clf_data$direction
+
+# Train/test split
+set.seed(123)
+n <- nrow(clf_data)
+train_index <- 1:round(0.8 * n)
+x_train <- as.matrix(features_scaled[train_index, ])
+x_test  <- as.matrix(features_scaled[-train_index, ])
+y_train <- target[train_index]
+y_test  <- target[-train_index]
+dates   <- clf_data$Date[-train_index]
+
+```
+
+```{r}
+library(xgboost)
+
+xgb_clf <- xgboost(
+  data = x_train,
+  label = y_train,
+  nrounds = 150,
+  eta = 0.05,
+  max_depth = 4,
+  subsample = 0.8,
+  colsample_bytree = 0.8,
+  objective = "binary:logistic",
+  eval_metric = "logloss",
+  verbose = 0
+)
+
+```
+
+```{r}
+# Predict probabilities
+pred_probs <- predict(xgb_clf, x_test)
+
+# Convert to class labels
+pred_class <- ifelse(pred_probs > 0.5, 1, 0)
+
+# Accuracy
+accuracy <- mean(pred_class == y_test)
+cat("🔍 XGBoost Classification Accuracy:", round(accuracy * 100, 2), "%\n")
+
+```
+
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
+
+```{r}
+library(caret)
+
+set.seed(1)
+train_idx <- createDataPartition(clf_data$direction, p = 0.8, list = FALSE)
+train <- clf_data[train_idx, ]
+test <- clf_data[-train_idx, ]
+
+log_model <- glm(direction ~ lag1 + lag2 + ma5 + ma10 + volatility10,
+                 data = train, family = "binomial")
+
+log_pred <- predict(log_model, newdata = test, type = "response")
+log_class <- ifelse(log_pred > 0.5, 1, 0)
+log_acc <- mean(log_class == test$direction)
+cat("Logistic Regression Accuracy:", round(log_acc * 100, 2), "%\n")
+
+```
+
+```{r}
+library(randomForest)
+
+rf_model <- randomForest(as.factor(direction) ~ lag1 + lag2 + ma5 + ma10 + volatility10,
+                         data = train, ntree = 100)
+rf_pred <- predict(rf_model, newdata = test)
+rf_acc <- mean(rf_pred == test$direction)
+cat("Random Forest Accuracy:", round(rf_acc * 100, 2), "%\n")
+
+```
+
+```{r}
+library(xgboost)
+
+x_train <- as.matrix(train[, c("lag1", "lag2", "ma5", "ma10", "volatility10")])
+x_test <- as.matrix(test[, c("lag1", "lag2", "ma5", "ma10", "volatility10")])
+y_train <- train$direction
+y_test <- test$direction
+
+xgb_model <- xgboost(
+  data = x_train,
+  label = y_train,
+  nrounds = 150,
+  eta = 0.05,
+  max_depth = 4,
+  objective = "binary:logistic",
+  verbose = 0
+)
+
+xgb_pred <- predict(xgb_model, x_test)
+xgb_class <- ifelse(xgb_pred > 0.5, 1, 0)
+xgb_acc <- mean(xgb_class == y_test)
+cat("XGBoost Accuracy:", round(xgb_acc * 100, 2), "%\n")
+
+```
+
+```{r}
+library(e1071)
+
+svm_model <- svm(as.factor(direction) ~ lag1 + lag2 + ma5 + ma10 + volatility10,
+                 data = train, kernel = "radial", probability = TRUE)
+
+svm_pred <- predict(svm_model, newdata = test)
+svm_acc <- mean(svm_pred == test$direction)
+cat("SVM Accuracy:", round(svm_acc * 100, 2), "%\n")
+
+```
+
+```{r}
+library(MASS)
+
+lda_model <- lda(direction ~ lag1 + lag2 + ma5 + ma10 + volatility10, data = train)
+lda_pred <- predict(lda_model, newdata = test)$class
+lda_acc <- mean(lda_pred == test$direction)
+cat("LDA Accuracy:", round(lda_acc * 100, 2), "%\n")
+
+```
+
+```{r}
+library(e1071)
+
+nb_model <- naiveBayes(as.factor(direction) ~ lag1 + lag2 + ma5 + ma10 + volatility10, data = train)
+nb_pred <- predict(nb_model, newdata = test)
+nb_acc <- mean(nb_pred == test$direction)
+cat("Naive Bayes Accuracy:", round(nb_acc * 100, 2), "%\n")
+
+```
+
+```{r}
+library(class)
+
+knn_train <- scale(train[, c("lag1", "lag2", "ma5", "ma10", "volatility10")])
+knn_test  <- scale(test[, c("lag1", "lag2", "ma5", "ma10", "volatility10")])
+
+knn_pred <- knn(train = knn_train, test = knn_test, cl = train$direction, k = 5)
+knn_acc <- mean(knn_pred == test$direction)
+cat("KNN Accuracy (k=5):", round(knn_acc * 100, 2), "%\n")
+
+```
+
+```{r}
+install.packages("keras")
+library(keras)
+install_keras()  # Only once
+
+```
+
+```{r}
+library(dplyr)
+library(keras)
+library(zoo)
+
+# STEP 1: Feature engineering
+lstm_data <- clean_data %>%
+  arrange(Date) %>%
+  mutate(
+    lag1 = lag(Close, 1),
+    lag2 = lag(Close, 2),
+    ma5 = rollmean(Close, 5, fill = NA, align = "right"),
+    ma10 = rollmean(Close, 10, fill = NA, align = "right"),
+    volatility10 = rollapply(Close, 10, sd, fill = NA, align = "right"),
+    direction = ifelse(lead(Close, 1) > Close, 1, 0)
+  ) %>%
+  select(lag1, lag2, ma5, ma10, volatility10, direction) %>%
+  na.omit()
+
+# STEP 2: Normalize features
+features <- scale(lstm_data[, 1:5])
+labels <- lstm_data$direction
+
+# STEP 3: Reshape for LSTM: [samples, timesteps, features]
+X <- array(data = as.numeric(unlist(features)), 
+           dim = c(nrow(features), 1, ncol(features)))
+
+y <- as.numeric(labels)
+
+# STEP 4: Train/test split
+set.seed(1)
+train_idx <- 1:round(0.8 * nrow(X))
+X_train <- X[train_idx, , ]
+X_test  <- X[-train_idx, , ]
+y_train <- y[train_idx]
+y_test  <- y[-train_idx]
+
+# STEP 5: Define LSTM model
+model <- keras_model_sequential() %>%
+  layer_lstm(units = 32, input_shape = c(1, 5), return_sequences = FALSE) %>%
+  layer_dense(units = 16, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = "adam",
+  metrics = c("accuracy")
+)
+
+# STEP 6: Train
+history <- model %>% fit(
+  X_train, y_train,
+  epochs = 20,
+  batch_size = 32,
+  validation_split = 0.2,
+  verbose = 0
+)
+
+# STEP 7: Evaluate
+score <- model %>% evaluate(X_test, y_test, verbose = 0)
+cat("📉 LSTM Test Accuracy:", round(score[[2]] * 100, 2), "%\n")
+
+```
+
+```{r}
+install.packages("reticulate")
+install.packages("keras")
+
+```
+
+```{r}
+# Download and read directly
+url <- "https://archive.ics.uci.edu/ml/machine-learning-databases/00222/bank.csv"
+download.file(url, destfile = "bank.csv")
+
+# Load dataset
+library(readr)
+bank_data <- read_csv2("bank.csv")  # semicolon separated
+
+```
+
+```{r}
+# Step 1: Download and unzip
+url <- "https://archive.ics.uci.edu/ml/machine-learning-databases/00222/bank.zip"
+download.file(url, destfile = "bank.zip")
+unzip("bank.zip", files = "bank.csv")
+
+# Step 2: Load CSV with correct separator
+library(readr)
+bank_data <- read_csv2("bank.csv")  # ; separator
+
+```
